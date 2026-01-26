@@ -2,11 +2,21 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.612738080547-d25hckoq5h2gh7ir9e96jcdh3gut6lt9</string>
+			</array>
+		</dict>
+		<dict/>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Hook uses your location to show nearby games and venues. Location is used only for discovery — player locations are never shown.</string>
 </dict>
 </plist>

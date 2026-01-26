@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseAuth
 
 struct ContentView: View {
     @StateObject private var model = AppModel(seed: false)
@@ -13,13 +14,6 @@ struct ContentView: View {
                 }
                 .tag(0)
             
-            MapView()
-                .environmentObject(model)
-                .tabItem {
-                    Label("Map", systemImage: "map.fill")
-                }
-                .tag(1)
-
             HostGameView()
                 .environmentObject(model)
                 .tabItem {
@@ -764,9 +758,9 @@ struct HostGameView: View {
     }
 }
 
-
 struct ProfileView: View {
     @EnvironmentObject var model: AppModel
+    @StateObject private var authViewModel = AuthViewModel()
     @State private var bioText: String = ""
     @State private var availability: Availability = .weeknights
     @State private var selectedSports: Set<Sport> = []
@@ -774,6 +768,21 @@ struct ProfileView: View {
     @State private var showSettings = false
 
     var body: some View {
+        Group {
+            if authViewModel.user != nil {
+                // User is signed in - show profile
+                authenticatedProfileView
+            } else {
+                // User is not signed in - show sign in
+                SignInView()
+                    .environmentObject(authViewModel)
+            }
+        }
+    }
+    
+    // MARK: - Authenticated Profile View
+    
+    private var authenticatedProfileView: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
@@ -803,14 +812,28 @@ struct ProfileView: View {
                                 Circle()
                                     .fill(Color.brandLightBlue.opacity(0.15))
                                     .frame(width: 100, height: 100)
-                                Text(model.currentUser.initials)
-                                    .font(.montserratBold(size: 36))
-                                    .foregroundColor(.brandPrimary)
+                                
+                                // Show Firebase user info if available
+                                if let displayName = authViewModel.user?.displayName {
+                                    Text(getInitials(from: displayName))
+                                        .font(.montserratBold(size: 36))
+                                        .foregroundColor(.brandPrimary)
+                                } else {
+                                    Text(model.currentUser.initials)
+                                        .font(.montserratBold(size: 36))
+                                        .foregroundColor(.brandPrimary)
+                                }
                             }
                             
-                            Text(model.currentUser.displayName)
+                            Text(authViewModel.user?.displayName ?? model.currentUser.displayName)
                                 .font(.montserratBold(size: 28))
                                 .foregroundColor(.textPrimary)
+                            
+                            if let email = authViewModel.user?.email {
+                                Text(email)
+                                    .font(.montserrat(size: 14))
+                                    .foregroundColor(.textSecondary)
+                            }
                             
                             Text(model.currentUser.skillBand.display)
                                 .font(.montserratMedium(size: 15))
@@ -865,17 +888,36 @@ struct ProfileView: View {
                                 .padding(.horizontal)
                             
                             HStack {
-                            Text(model.currentUser.availability.label)
-                                .font(.montserratMedium(size: 15))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.brandLightBlue.opacity(0.3))
-                                .foregroundColor(.brandPrimary)
-                                .cornerRadius(16)
+                                Text(model.currentUser.availability.label)
+                                    .font(.montserratMedium(size: 15))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color.brandLightBlue.opacity(0.3))
+                                    .foregroundColor(.brandPrimary)
+                                    .cornerRadius(16)
                                 Spacer()
                             }
                             .padding(.horizontal)
                         }
+                        
+                        // Sign Out Button
+                        Button {
+                            authViewModel.signOut()
+                        } label: {
+                            Text("Sign Out")
+                                .font(.montserratSemiBold(size: 16))
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.cardBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                                )
+                                .cornerRadius(12)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 16)
                     }
                     .padding(.bottom, 32)
                 }
@@ -899,7 +941,15 @@ struct ProfileView: View {
             }
         }
     }
+    
+    // Helper function to get initials from display name
+    private func getInitials(from name: String) -> String {
+        let components = name.components(separatedBy: " ")
+        let initials = components.compactMap { $0.first }.map { String($0) }
+        return initials.prefix(2).joined().uppercased()
+    }
 }
+
 
 struct StatCard: View {
     let icon: String
